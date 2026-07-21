@@ -1,21 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notepad</title>
+    <title>Login</title>
 </head>
 
 <body>
-    <h2>Login</h2>
+    <h1>Post Login</h1>
     <form action="/login" method="POST">
-        <input name="username" placeholder="Username" required><br><br>
-        <input name="password" type="password" placeholder="Password" required><br><br>
-        <button>Log In</button>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Log In</button>
     </form>
     <p>Don't have an account? <a href="/register">Register here</a></p>
-    <p><small>Hint: admin / pass</small></p>
 </body>
 
 </html>

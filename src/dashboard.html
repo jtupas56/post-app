@@ -2,18 +2,32 @@
 <html>
 
 <head>
-    <meta charset="UTF-8">
     <title>Dashboard</title>
 </head>
 
 <body>
-    <h2>Welcome, {{username}} (UID: {{uid}})</h2>
-    <form action="/delete" method="POST">
+    <h1>Welcome, {{username}}</h1>
+
+    <h2>Add a Post</h2>
+    <form action="/add-post" method="POST">
+        <input type="hidden" name="uid" value="{{uid}}">
         <input type="hidden" name="username" value="{{username}}">
-        <input type="password" name="password" placeholder="Confirm password" required><br><br>
-        <button type="submit">Delete Account</button>
+        <textarea name="content" placeholder="Write something..." required></textarea>
+        <button type="submit">Post</button>
     </form>
-    <p><a href="/">Logout</a></p>
+
+    <h2>All Posts</h2>
+    <ul>{{post_list}}</ul>
+
+    <hr>
+
+    <h3>Delete Account</h3>
+    <form action="/delete-account" method="POST">
+        <input type="hidden" name="uid" value="{{uid}}">
+        <button type="submit">Delete My Account</button>
+    </form>
+
+    <br><a href="/">Logout</a>
 </body>
 
 </html>

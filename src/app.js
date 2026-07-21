@@ -1,56 +1,88 @@
 const express = require('express');
 const sqlite3 = require('sqlite3');
-const bcrypt = require('bcrypt');
 const fs = require('fs');
+const path = require('path');
+
 const app = express();
-const db = new sqlite3.Database('database.db');
+const db = new sqlite3.Database(path.join(__dirname, '../database.db'));
 
 app.use(express.urlencoded({ extended: true }));
 
-db.run(`CREATE TABLE IF NOT EXISTS users (
-  uid INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE,
-  password TEXT
-)`);
+db.run(`CREATE TABLE IF NOT EXISTS users (uid INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)`);
+db.run(`CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, content TEXT)`);
 
-app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
-app.get('/register', (req, res) => res.sendFile(__dirname + '/register.html'));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'register.html')));
 
-app.post('/register', async (req, res) => {
+app.post('/register', (req, res) => {
     const { username, password } = req.body;
-    if (!username || !password)
-        return res.send('Both fields required. <a href="/register">Try again</a>');
-
-    const hashed = await bcrypt.hash(password, 10);
-    db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashed], function (err) {
-        if (err) return res.send('Username taken. <a href="/register">Try again</a>');
-        res.send('Registration successful! Your UID is ' + this.lastID + '. <a href="/">Login now</a>');
+    if (!username || !password) return res.send('Fields required.');
+    db.run(`INSERT INTO users (username, password) VALUES ('${username}', '${password}')`, function (err) {
+        if (err) return res.send('Username taken.');
+        res.redirect('/');
     });
 });
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
-        if (err || !user) return res.send('Invalid credentials. <a href="/">Retry</a>');
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.send('Invalid credentials. <a href="/">Retry</a>');
+    db.get(`SELECT * FROM users WHERE username = '${username}'`, (err, user) => {
+        if (!user) return res.send('Invalid user.');
+        if (user.password !== password) return res.send('Wrong password.');
+        res.redirect(`/dashboard?uid=${user.uid}&username=${username}`);
+    });
+});
 
-        let html = fs.readFileSync(__dirname + '/dashboard.html', 'utf8');
-        html = html.replace(/\{\{username\}\}/g, username);
-        html = html.replace(/\{\{uid\}\}/g, user.uid);
+app.get('/dashboard', (req, res) => {
+    const { uid, username } = req.query;
+    if (!uid) return res.redirect('/');
+
+    db.all('SELECT posts.id, posts.content, posts.user_id, users.username as author FROM posts JOIN users ON posts.user_id = users.uid', [], (err, posts) => {
+        let html = fs.readFileSync(path.join(__dirname, 'dashboard.html'), 'utf8');
+        let postList = '';
+
+        if (posts) {
+            posts.forEach(post => {
+                let deleteLink = '';
+                if (post.user_id == uid) {
+                    deleteLink = ` <a href="/delete-post?id=${post.id}&uid=${uid}&username=${username}">[Delete]</a>`;
+                }
+                postList += `<li><strong>${post.author}</strong>: ${post.content}${deleteLink}</li>`;
+            });
+        }
+
+        html = html.replace('{{username}}', username);
+        html = html.replace('{{uid}}', uid);
+        html = html.replace('{{post_list}}', postList);
         res.send(html);
     });
 });
 
-app.post('/delete', async (req, res) => {
-    const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
-        if (err || !user) return res.send('User not found. <a href="/">Go back</a>');
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.send('Incorrect password. <a href="/">Go back</a>');
-        db.run('DELETE FROM users WHERE username = ?', [username], function (err) {
-            if (err) return res.send('Delete failed. <a href="/">Go back</a>');
-            res.send('Account deleted. <a href="/">Register or login again</a>');
+app.post('/add-post', (req, res) => {
+    const { content, uid, username } = req.body;
+    db.run(`INSERT INTO posts (user_id, content) VALUES (${uid}, '${content}')`, () => {
+        res.redirect(`/dashboard?uid=${uid}&username=${username}`);
+    });
+});
+
+app.get('/delete-post', (req, res) => {
+    const { id, uid, username } = req.query;
+    db.get(`SELECT user_id FROM posts WHERE id = ${id}`, (err, post) => {
+        if (post && post.user_id == uid) {
+            db.run(`DELETE FROM posts WHERE id = ${id}`, () => {
+                res.redirect(`/dashboard?uid=${uid}&username=${username}`);
+            });
+        } else {
+            res.redirect(`/dashboard?uid=${uid}&username=${username}`);
+        }
+    });
+});
+
+app.post('/delete-account', (req, res) => {
+    const { uid } = req.body;
+    if (!uid) return res.redirect('/');
+    db.run(`DELETE FROM posts WHERE user_id = ${uid}`, () => {
+        db.run(`DELETE FROM users WHERE uid = ${uid}`, () => {
+            res.redirect('/');
         });
     });
 });
