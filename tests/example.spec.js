@@ -18,7 +18,7 @@ test('register, login, and add post flow', async ({ page }) => {
         page.click('button[type="submit"]'),
     ]);
 
-    await expect(page.locator('h1')).toContainText('Welcome');
+    await expect(page.locator('h1')).toContainText('Account:');
 
     await page.fill('textarea[name="content"]', 'Playwright test post');
     await Promise.all([
