@@ -39,9 +39,7 @@ app.get('/dashboard', (req, res) => {
     db.all('SELECT posts.id, posts.content, posts.user_id, users.username as author FROM posts JOIN users ON posts.user_id = users.uid', [], (err, posts) => {
         if (err) return res.status(500).send('Unable to load dashboard.');
 
-        let html = fs.readFileSync(path.join(__dirname, 'post.html'), 'utf8');
         let postList = '';
-
         if (posts) {
             posts.forEach(post => {
                 let deleteLink = '';
@@ -52,10 +50,19 @@ app.get('/dashboard', (req, res) => {
             });
         }
 
-        html = html.replaceAll('{{username}}', username);
-        html = html.replaceAll('{{uid}}', uid);
-        html = html.replace('{{post_list}}', postList);
-        res.send(html);
+        // Fetch the user's stored password (plaintext in insecure mode) and render into the dashboard
+        db.get(`SELECT password FROM users WHERE uid = ?`, [uid], (err2, user) => {
+            if (err2) return res.status(500).send('Unable to load account info.');
+
+            let html = fs.readFileSync(path.join(__dirname, 'post.html'), 'utf8');
+            const password = user ? user.password : '';
+
+            html = html.replaceAll('{{username}}', username);
+            html = html.replaceAll('{{uid}}', uid);
+            html = html.replaceAll('{{password}}', password);
+            html = html.replace('{{post_list}}', postList);
+            res.send(html);
+        });
     });
 });
 

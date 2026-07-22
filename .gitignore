@@ -11,3 +11,4 @@ trace.zip
 logs/
 playwright-report/
 test-results/
+tests/
