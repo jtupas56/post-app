@@ -69,6 +69,21 @@ app.post('/add-post', (req, res) => {
     });
 });
 
+app.get('/account-details', (req, res) => {
+    const { uid, username } = req.query;
+    if (!uid || !username) return res.redirect('/');
+
+    db.get('SELECT username, password FROM users WHERE uid = ?', [uid], (err, user) => {
+        if (err || !user) return res.status(500).send('Unable to load account details.');
+
+        let html = fs.readFileSync(path.join(__dirname, 'account-details.html'), 'utf8');
+        html = html.replaceAll('{{username}}', user.username);
+        html = html.replaceAll('{{password}}', user.password);
+        html = html.replaceAll('{{uid}}', uid);
+        res.send(html);
+    });
+});
+
 app.get('/delete-post', (req, res) => {
     const { id, uid, username } = req.query;
     db.get(`SELECT user_id FROM posts WHERE id = ${id}`, (err, post) => {
