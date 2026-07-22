@@ -16,6 +16,7 @@
           <div class="card-body p-4">
             <h1 class="h4 mb-4 text-center">Login</h1>
             <form action="/login" method="POST">
+              <input type="hidden" name="_csrf" value="{{csrfToken}}">
               <div class="mb-3">
                 <input type="text" name="username" class="form-control" placeholder="Username" required>
               </div>
