@@ -1,17 +1,16 @@
 {
   "name": "post-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple Express auth and post app with intentional vulnerabilities.",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "app.js",
+  "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
     "test": "exit 0"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "express": "^5.2.1",
     "sqlite3": "^6.0.1"
   }

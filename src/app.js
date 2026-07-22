@@ -34,10 +34,12 @@ app.post('/login', (req, res) => {
 
 app.get('/dashboard', (req, res) => {
     const { uid, username } = req.query;
-    if (!uid) return res.redirect('/');
+    if (!uid || !username) return res.redirect('/');
 
     db.all('SELECT posts.id, posts.content, posts.user_id, users.username as author FROM posts JOIN users ON posts.user_id = users.uid', [], (err, posts) => {
-        let html = fs.readFileSync(path.join(__dirname, 'dashboard.html'), 'utf8');
+        if (err) return res.status(500).send('Unable to load dashboard.');
+
+        let html = fs.readFileSync(path.join(__dirname, 'post.html'), 'utf8');
         let postList = '';
 
         if (posts) {
@@ -50,8 +52,8 @@ app.get('/dashboard', (req, res) => {
             });
         }
 
-        html = html.replace('{{username}}', username);
-        html = html.replace('{{uid}}', uid);
+        html = html.replaceAll('{{username}}', username);
+        html = html.replaceAll('{{uid}}', uid);
         html = html.replace('{{post_list}}', postList);
         res.send(html);
     });
@@ -59,7 +61,10 @@ app.get('/dashboard', (req, res) => {
 
 app.post('/add-post', (req, res) => {
     const { content, uid, username } = req.body;
-    db.run(`INSERT INTO posts (user_id, content) VALUES (${uid}, '${content}')`, () => {
+    if (!content || !uid || !username) return res.redirect('/');
+
+    db.run('INSERT INTO posts (user_id, content) VALUES (?, ?)', [uid, content], err => {
+        if (err) return res.status(500).send('Unable to save post.');
         res.redirect(`/dashboard?uid=${uid}&username=${username}`);
     });
 });
