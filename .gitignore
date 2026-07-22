@@ -3,3 +3,11 @@ dist/
 build/
 *.log
 .env
+database.db
+trace.zip
+.DS_Store
+.vscode/
+.idea/
+logs/
+playwright-report/
+test-results/
